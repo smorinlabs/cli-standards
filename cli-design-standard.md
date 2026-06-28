@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.4.13 |
+| **Version** | 1.4.14 |
 | **Status** | Active — canonical |
 | **Last updated** | 2026-06-28 |
 | **Applies to** | All new CLIs, any language |
@@ -92,7 +92,7 @@ Every settled axis, the choice, and why. "Org-locked" entries were decided by th
 | 30 | Idempotency / TLS | Auto idempotency key on retry; TLS verified by default, `--insecure` warns loudly | Safe network behavior | derived |
 | 31 | Input/stdin/format | `--file` (no short) + auto stdin read; input format auto-detected, `--input-format` override; atomic `--output-file`, silent overwrite + `--no-clobber` | Symmetric with output; ergonomic | derived |
 | 32 | No prefix abbreviation | Exact match required for flags/commands; no GNU-style `--ver`→`--verbose` | Protects scripts from drift | derived |
-| 33 | Error schema | `-o json` ordinary errors are one JSON object `{"error":{"code","message"}}` on stderr with stable `code`; JSONL is reserved for documented streams/multi-record output | Parseable failures without overloading stream format | derived |
+| 33 | Error schema | Under any machine format, ordinary errors are one JSON object `{"error":{"code","message"}}` on stderr with stable `code`; JSONL is reserved for documented streams/multi-record output | Parseable failures without overloading stream format | derived |
 | 34 | Bare/unknown invocation | Bare top → help/stdout/0; incomplete group → usage/stderr/2; suggest nearest on unknown | Friendly + strict | derived |
 | 35 | Version format | `acme <semver>` one line; `--version -o json` optional | GNU-style, predictable | derived |
 | 36 | Secret redaction | Secrets masked in all output incl. debug/logs/errors; `--show-secrets` to reveal | Output-side secret safety | derived |
@@ -113,6 +113,7 @@ Every settled axis, the choice, and why. "Org-locked" entries were decided by th
 | 51 | v1.4.11 policy cleanup patch | Waived SHOULD rules require stable repository documentation; interactive confirmation is gated on stdin TTY with prompts on stderr and no surprise `/dev/tty` prompting by default | Reviewable conformance plus automation-safe prompting | derived |
 | 52 | v1.4.12 editorial cleanup patch | Clarified value-taking short-flag clusters, comma-list escaping, predicate/search exit `1` stderr behavior, and concrete `--version -o json` schema | Parser portability and script-friendly precision | derived |
 | 53 | v1.4.13 ecosystem gap patch | Added recommended ecosystem rules for release integrity, diagnostics, config validation/migration, plugins, rate limits, cache/offline controls, command metadata, conformance fixtures, experimental features, state locking, error catalogs, interactive setup, and dry-run plans | Completes high-value operational gaps while keeping domain-specific features conditional | derived |
+| 54 | v1.4.14 review-comment consistency patch | Made affirmative the R7.8 single-object error contract that R7.6 already routed every machine format to — now stated explicitly for `json`/`jsonl`/`yaml`/`name`, including mid-stream failures (synced principles row 33 and the Appendix C checklist); gave R5.2's repository/workspace boundary concrete example markers; restored the `-o` prefix on R9.4's machine-format list; and tightened R3.5's value-taking short-flag cluster wording | Resolves PR #1 reviewer findings; completes an obligation the doc already implied | derived |
 
 ---
 
@@ -203,7 +204,7 @@ A single-dash, single-character short alias **MAY** be provided, and **SHOULD** 
 ✅ `-o json` ≡ `--output json`; `--file ./manifest.toml` (no short) ❌ a short flag with no long equivalent; `-f ./manifest.toml` for file input
 
 **R3.5 — Combining & value attachment. (MUST / SHOULD)**
-No-argument short flags **MUST** be combinable behind one dash (`-abc` ≡ `-a -b -c`, POSIX Guideline 5). Only no-argument short flags may appear before other short flags in a cluster. If a short flag takes a value and attached short values are supported, the value-taking short flag **MUST** be the final flag in that token; a separated value **MUST** always be accepted. For value-taking long flags, both `--flag=value` and `--flag value` **MUST** be accepted.
+No-argument short flags **MUST** be combinable behind one dash (`-abc` ≡ `-a -b -c`, POSIX Guideline 5). If a short flag takes a value and attached short values are supported, that value-taking short flag **MUST** be the final flag in the token and every short flag preceding it in the cluster **MUST** be a no-argument flag; a separated value **MUST** always be accepted. For value-taking long flags, both `--flag=value` and `--flag value` **MUST** be accepted.
 ✅ `acme deploy list -aq`, `-o json`, `--region=us-east-1`, `--region us-east-1`; `-ojson` if attached short values are supported
 ❌ rejecting `--region=us-east-1` while accepting `--region us-east-1`; parsing `-qojson` ambiguously when `-o` takes a value
 
@@ -299,7 +300,7 @@ Configuration **MUST** resolve in this order, highest priority first, and the to
 Where more than one config file in the chain sets the same key, maps/tables **MUST** merge recursively by default. Scalar values replace scalar values, arrays **replace** arrays (not concatenate), and the nearer scope wins. A tool **MAY** use a different merge strategy (e.g., array concatenation, cargo-style) where its domain requires it, but **MUST** document the strategy clearly.
 
 **R5.2 — Config file format & discovery. (MUST / SHOULD)**
-The canonical config format **MUST** be **TOML**. **YAML MAY** be used instead *only* for tools that live in the Kubernetes/cloud-native ecosystem, where users expect it; this is the single permitted exception. JSON and INI **MUST NOT** be the canonical format. The canonical discovered config filename **SHOULD** be `<tool>_config.toml` for findability: project/local discovery looks for `.<tool>/<tool>_config.toml` in the current directory and then each parent directory, user config is `$XDG_CONFIG_HOME/<tool>/<tool>_config.toml`, and system config is searched under each `$XDG_CONFIG_DIRS` entry as `<tool>/<tool>_config.toml`. Project discovery **SHOULD** stop at a repository/workspace boundary when detectable, otherwise at the filesystem root. An explicit `--config <path>` **MUST** **replace** the discovered project/user/system config files — it becomes the sole config file in the chain — while command-line flags and environment variables still layer above it and built-in defaults below it (R5.1). It does **not** merge with the files it overrides.
+The canonical config format **MUST** be **TOML**. **YAML MAY** be used instead *only* for tools that live in the Kubernetes/cloud-native ecosystem, where users expect it; this is the single permitted exception. JSON and INI **MUST NOT** be the canonical format. The canonical discovered config filename **SHOULD** be `<tool>_config.toml` for findability: project/local discovery looks for `.<tool>/<tool>_config.toml` in the current directory and then each parent directory, user config is `$XDG_CONFIG_HOME/<tool>/<tool>_config.toml`, and system config is searched under each `$XDG_CONFIG_DIRS` entry as `<tool>/<tool>_config.toml`. Project discovery **SHOULD** stop at a repository/workspace boundary when detectable — for example a `.git` directory or a language/workspace root marker such as `Cargo.toml`, `go.mod`, `package.json`, or `pyproject.toml` (a non-exhaustive baseline) — otherwise at the filesystem root. An explicit `--config <path>` **MUST** **replace** the discovered project/user/system config files — it becomes the sole config file in the chain — while command-line flags and environment variables still layer above it and built-in defaults below it (R5.1). It does **not** merge with the files it overrides.
 ✅ `.acme/acme_config.toml`; `$XDG_CONFIG_HOME/acme/acme_config.toml`; `--config ./custom.toml`
 ❌ a primary `config.json` for a general-purpose tool
 
@@ -428,7 +429,7 @@ Because stdout is fully buffered when it is not a terminal (ISO C), diagnostics 
 ❌ losing the last line of output because the buffer wasn't flushed before exit
 
 **R7.8 — Machine-readable error schema. (MUST)**
-Under `-o json`/`--json`, an ordinary command error **MUST** be emitted to stderr as a single JSON object: `{"error":{"code":"<stable-string>","message":"<human-readable>"}}`. `code` **MUST** be a stable, documented string, and the object **MAY** carry `details`, `request_id`, or other documented fields. JSONL/NDJSON **MAY** be used for documented streaming or multi-record machine output, where each line is one complete JSON object, but it **MUST NOT** replace the single-object error schema for ordinary command failures. If a parser can determine that a machine format was requested before reporting a usage error, it **SHOULD** use the same machine-readable error contract; otherwise it **MAY** fall back to the standard human usage error format.
+Under any machine output format (`-o json`/`--json`, `-o jsonl`, `-o yaml`, or `-o name`), an ordinary command error **MUST** be emitted to stderr as a single JSON object: `{"error":{"code":"<stable-string>","message":"<human-readable>"}}` — a JSONL stream **MUST NOT** suppress or replace it (see below). `code` **MUST** be a stable, documented string, and the object **MAY** carry `details`, `request_id`, or other documented fields. JSONL/NDJSON **MAY** be used for documented streaming or multi-record machine output, where each line is one complete JSON object, but it **MUST NOT** replace the single-object error schema for ordinary command failures, including a failure that occurs mid-stream. If a parser can determine that a machine format was requested before reporting a usage error, it **SHOULD** use the same machine-readable error contract; otherwise it **MAY** fall back to the standard human usage error format.
 ✅ `{"error":{"code":"not_found","message":"project 'demo' not found"}}` ❌ a bare unparseable string under `-o json`; emitting JSONL for a one-error command failure
 
 **R7.9 — Bare & unknown invocation. (MUST / SHOULD)**
@@ -491,7 +492,7 @@ When a command or flag is retired, the tool **MUST**: (a) print a deprecation wa
 The tool **MUST** version itself with SemVer and treat its **interface as the public contract**: command names, flag names, exit codes, env-var names, and machine-readable output shape. Breaking any of these **MUST** be a major-version change. For machine output, breaking and non-breaking shape changes are defined in R7.2. `-o json`/`-o jsonl`/`-o name` and other machine formats **MUST** remain stable across non-major versions (R7.2).
 
 **R9.4 — Encoding & locale. (MUST / SHOULD)**
-Input and output **MUST** default to UTF-8. Human-facing messages **MAY** honor locale, but machine-readable output (`-o json`/`jsonl`/`yaml`) **MUST** remain locale-independent (e.g., `.` decimal separator, ISO-8601 timestamps, untranslated keys) so scripts are portable. If localized human output is supported, the tool **SHOULD** document how to force a support/debug locale such as English.
+Input and output **MUST** default to UTF-8. Human-facing messages **MAY** honor locale, but machine-readable output (`-o json`/`-o jsonl`/`-o yaml`) **MUST** remain locale-independent (e.g., `.` decimal separator, ISO-8601 timestamps, untranslated keys) so scripts are portable. If localized human output is supported, the tool **SHOULD** document how to force a support/debug locale such as English.
 ✅ JSON timestamps as `2026-06-27T12:00:00Z` regardless of locale
 ❌ localized number formatting (`1.234,56`) inside JSON
 
@@ -643,7 +644,7 @@ A tool conforms when every **MUST** is satisfied and each waived **SHOULD** is d
 - [ ] R5.1 documented precedence chain and recursive table merge · R5.2 canonical config paths (`.<tool>/<tool>_config.toml`, `$XDG_CONFIG_HOME/<tool>/<tool>_config.toml`, `$XDG_CONFIG_DIRS/<tool>/<tool>_config.toml`) plus TOML (or cloud-native YAML) · R5.3 XDG paths · R5.4 `TOOL_*` curated env · R5.5 no secrets in argv · R5.8 config validation/migration + shared-state locking where applicable · R5.9 cache/offline controls where caching exists
 
 **Exit & output**
-- [ ] R6.1 exit-code scheme · R6.2 predicate/search exit `1` has no stderr error for expected-negative results · R6.3 partial-failure → exit 1 · R7.1 stdout=data/stderr=diagnostics · R7.2 stable open-by-default machine output (`json`/`jsonl`/`yaml`/`name`) with optional additive fields only in non-major releases · R7.5 structured help with example · R7.6 errors to stderr · R7.7 flush before exit · R7.8 single-object JSON error schema under `-o json` and JSONL only for documented streams · R7.9 bare→help/0, group→usage/2 · R7.12 error code catalog
+- [ ] R6.1 exit-code scheme · R6.2 predicate/search exit `1` has no stderr error for expected-negative results · R6.3 partial-failure → exit 1 · R7.1 stdout=data/stderr=diagnostics · R7.2 stable open-by-default machine output (`json`/`jsonl`/`yaml`/`name`) with optional additive fields only in non-major releases · R7.5 structured help with example · R7.6 errors to stderr · R7.7 flush before exit · R7.8 single-object JSON error schema under any machine format and JSONL only for documented streams · R7.9 bare→help/0, group→usage/2 · R7.12 error code catalog
 
 **Safety & lifecycle**
 - [ ] R8.1 destructive confirm uses stdin TTY, prompts on stderr, and documents any `/dev/tty` behavior · R8.2 non-interactive exit `2`/`4`/`1` mapping · R8.5 interactive flows have non-interactive path · R8.6 dry-run plans are clear · R9.2 deprecation policy · R9.3 SemVer interface contract · R9.4 UTF-8 + locale-independent machine output · R9.6 clean SIGINT/SIGPIPE/SIGTERM · R9.7 telemetry disclosure, opt-out controls, data minimization, and CI/non-interactive disablement · R9.9 release integrity if self-updating · R9.10 diagnostics/doctor for non-trivial CLIs · R9.11 plugin contract if plugins exist · R9.12 experimental features marked · R9.13 command metadata if provided · R9.14 conformance fixtures for mature CLIs · R3.10 no prefix abbreviation · R5.6 secrets redacted in output
