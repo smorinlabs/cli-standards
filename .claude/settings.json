@@ -1,0 +1,5 @@
+{
+  "companyAnnouncements": [
+    "The CLI Design Standard — a normative, rule-ID'd standard for CLI design (cli-design-standard.md, v1.4.x). Ships the cli-standards skill: plan / check / review / audit any CLI against the standard, scaled by tier. Docs: docs/skills/cli-standards.md."
+  ]
+}
