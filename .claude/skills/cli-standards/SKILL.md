@@ -1,6 +1,6 @@
 ---
 name: cli-standards
-description: Apply the org's CLI Design Standard (cli-design-standard.md in this repo) to any CLI work, scaled by tier (minimal / standard / publishable) and feature applicability. Four modes — plan (greenfield interview → noun-verb vs small-CLI profile, tier, interface spec), check (mid-build lookups — "what exit code / flag / config path does the standard say"), review (design review of a CLI spec or plan; findings cite rule IDs), audit (conformance sweep of an existing CLI with live execution checks; emits findings, a CONFORMANCE.md waiver note, optional CI fixtures). Fires whenever a CLI is being created, designed, extended, reviewed, or audited — "new CLI", "build a CLI", "add a subcommand", "review this CLI design", "is this CLI conformant", "audit this CLI", "CLI standards". Not for generic non-CLI architecture review (factor-architect), generic quality sweeps (factor-scan), external CLI-practice research (guided-research), or package-name availability (claim-package-name-skill).
+description: Apply the org's CLI Design Standard to CLI work in plan, check, review, and audit modes, scaled by tier. Use when a CLI is being created, extended, reviewed, or audited, such as "build a CLI", "add a subcommand", "review this CLI design", or "is this CLI conformant". Not for HTTP APIs (rest-standards) or package-name availability (claim-package-name-skill).
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion
 ---
 
