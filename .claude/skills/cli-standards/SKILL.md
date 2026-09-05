@@ -1,6 +1,6 @@
 ---
 name: cli-standards
-description: Apply the org's CLI Design Standard to CLI work in plan, check, review, and audit modes, scaled by tier. Use when a CLI is being created, extended, reviewed, or audited, such as "build a CLI", "add a subcommand", "review this CLI design", or "is this CLI conformant". Not for HTTP APIs (rest-standards) or package-name availability (claim-package-name-skill).
+description: Apply the org's CLI Design Standard to CLI work in plan, check, review, and audit modes, scaled by tier. Use when a CLI is being created, extended, reviewed, or audited, such as "build a CLI", "add a subcommand", "review this CLI design", or "is this CLI conformant", or when looking up required exit codes, flags, config paths, or command verbs. Not for HTTP APIs (rest-standards) or package-name availability (claim-package-name-skill).
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion
 ---
 
