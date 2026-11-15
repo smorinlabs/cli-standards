@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Version** | 1.4.14 |
+| **Version** | 1.4.15 |
 | **Status** | Active — canonical |
-| **Last updated** | 2026-06-28 |
+| **Last updated** | 2026-11-15 |
 | **Applies to** | All new CLIs, any language |
 
 > **Conformance language.** The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are used as defined in RFC 2119. **MUST**-level rules are required for conformance; **SHOULD**-level rules are strong defaults that may be waived only with a documented reason; **MAY**-level rules are permitted options.
@@ -114,6 +114,7 @@ Every settled axis, the choice, and why. "Org-locked" entries were decided by th
 | 52 | v1.4.12 editorial cleanup patch | Clarified value-taking short-flag clusters, comma-list escaping, predicate/search exit `1` stderr behavior, and concrete `--version -o json` schema | Parser portability and script-friendly precision | derived |
 | 53 | v1.4.13 ecosystem gap patch | Added recommended ecosystem rules for release integrity, diagnostics, config validation/migration, plugins, rate limits, cache/offline controls, command metadata, conformance fixtures, experimental features, state locking, error catalogs, interactive setup, and dry-run plans | Completes high-value operational gaps while keeping domain-specific features conditional | derived |
 | 54 | v1.4.14 review-comment consistency patch | Made affirmative the R7.8 single-object error contract that R7.6 already routed every machine format to — now stated explicitly for `json`/`jsonl`/`yaml`/`name`, including mid-stream failures (synced principles row 33 and the Appendix C checklist); gave R5.2's repository/workspace boundary concrete example markers; restored the `-o` prefix on R9.4's machine-format list; and tightened R3.5's value-taking short-flag cluster wording | Resolves PR #1 reviewer findings; completes an obligation the doc already implied | derived |
+| 55 | v1.4.15 SIGHUP exit-code patch | Added `129` (SIGHUP) to R6.1 for tools that handle SIGHUP; R9.6 lets a tool handle SIGHUP like SIGINT/SIGTERM and then requires exit `129` and a `nohup` note | A conforming CLI (brot v0.6.0) handles SIGHUP; without a listed code R6.1 forced `1`, which breaks the 128 + signal convention `130`/`143` already follow | derived |
 
 ---
 
@@ -361,8 +362,9 @@ A CLI **MUST** use the following scheme. Unlisted failures collapse to `1`. This
 | `5` | Conflict / precondition failed |
 | `130` | Interrupted by `SIGINT` (Ctrl-C) |
 | `143` | Terminated by `SIGTERM` |
+| `129` | Hung up by `SIGHUP` (only for a tool that handles `SIGHUP`; see R9.6) |
 
-Note: code `2` means *usage error* here (matching shell/argparse convention), a deliberate divergence from gh, which uses `2` for "cancelled." Cancellation surfaces as `130` for `SIGINT` or `143` for `SIGTERM`.
+Note: code `2` means *usage error* here (matching shell/argparse convention), a deliberate divergence from gh, which uses `2` for "cancelled." Cancellation surfaces as `130` for `SIGINT` or `143` for `SIGTERM`, and as `129` for `SIGHUP` in a tool that handles it. All three follow the shell's 128 + signal-number convention, so a script reads them the same way whether the tool exited on its own or the signal killed it.
 
 **R6.2 — Query & empty-result exit codes. (MUST / MAY)**
 By default, a `view`/`describe` of a resource that does not exist **MUST** exit `3` (not found), and an empty `list` **MUST** exit `0` (an empty set is a successful result, not an error). Beyond those defaults, read/query commands **MAY** use exit `1` to mean "ran successfully, found nothing / found differences" (git `diff`/`grep` style), but only for explicit predicate/search commands and only when **documented per command**, so it never collides with `1` = error or with the `3`/`0` defaults above. Expected-negative exit `1` **MUST NOT** emit an error record on stderr; runtime failures still **MUST** emit stderr diagnostics (R7.6/R7.8).
@@ -500,7 +502,7 @@ Input and output **MUST** default to UTF-8. Human-facing messages **MAY** honor 
 Network-backed CLIs **SHOULD** apply sane request timeouts and bounded retries with backoff on idempotent calls, and **MUST NOT** retry non-idempotent mutations blindly (use idempotency keys, R10.5). Authentication, targeting, pagination, and TLS conventions for networked tools are defined in §10.
 
 **R9.6 — Signals. (MUST)**
-A tool **MUST** exit cleanly on `SIGINT` with code `130`, releasing resources, and **MUST** handle `SIGPIPE`/`EPIPE` gracefully — when a reader like `head` or `less` closes the pipe, exit quietly without a broken-pipe stack trace. It **MUST** also treat `SIGTERM` like `SIGINT` — clean up, flush (R7.7), and exit `143` (128+15) — so it behaves correctly under containers, orchestrators, and CI runners.
+A tool **MUST** exit cleanly on `SIGINT` with code `130`, releasing resources, and **MUST** handle `SIGPIPE`/`EPIPE` gracefully — when a reader like `head` or `less` closes the pipe, exit quietly without a broken-pipe stack trace. It **MUST** also treat `SIGTERM` like `SIGINT` — clean up, flush (R7.7), and exit `143` (128+15) — so it behaves correctly under containers, orchestrators, and CI runners. A tool **MAY** also handle `SIGHUP` (a closed terminal or SSH session) the same way; if it does, it **MUST** exit `129` (128+1). A tool that handles `SIGHUP` no longer survives `nohup`-style detachment by default, so it **SHOULD** document that.
 ✅ `acme widget list | head -5` ends silently; `kill <pid>` shuts down cleanly with code `143` ❌ a Python traceback on `BrokenPipeError`; ignoring SIGTERM until killed with `SIGKILL`
 
 **R9.7 — Telemetry & update checks. (MUST / SHOULD)**
@@ -610,9 +612,9 @@ Networked CLIs **SHOULD** recognize rate-limit responses distinctly, honor serve
 
 **Exit codes**
 
-| 0 | 1 | 2 | 3 | 4 | 5 | 130 | 143 |
-|---|---|---|---|---|---|---|---|
-| success | error | usage | not found | auth | conflict | SIGINT | SIGTERM |
+| 0 | 1 | 2 | 3 | 4 | 5 | 129 | 130 | 143 |
+|---|---|---|---|---|---|---|---|---|
+| success | error | usage | not found | auth | conflict | SIGHUP (if handled) | SIGINT | SIGTERM |
 
 **Precedence (high → low):** flags → `TOOL_*` env → project config (`.<tool>/<tool>_config.toml`) → user config (`$XDG_CONFIG_HOME/<tool>/<tool>_config.toml`) → system config (`$XDG_CONFIG_DIRS/<tool>/<tool>_config.toml`) → defaults
 
@@ -727,7 +729,7 @@ Examples:
   acme deploy create web --replicas 3 --region us-east-1
   acme deploy logs web --follow -o jsonl
 
-Exit codes: 0 ok · 1 error · 2 usage · 3 not-found · 4 auth · 5 conflict · 130 interrupted · 143 terminated
+Exit codes: 0 ok · 1 error · 2 usage · 3 not-found · 4 auth · 5 conflict · 129 hung up · 130 interrupted · 143 terminated
 ```
 
 **Behaviors that demonstrate the rules:**
